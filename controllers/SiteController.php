@@ -3,57 +3,14 @@
 namespace app\controllers;
 
 use Yii;
-use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\Response;
-use yii\filters\VerbFilter;
 use app\models\LoginForm;
-use app\models\ContactForm;
+use yii\data\ActiveDataProvider;
+use app\models\Webcontent;
 
 class SiteController extends Controller
 {
-    /**
-     * {@inheritdoc}
-     */
-    public function behaviors()
-    {
-        return [
-            'access' => [
-                'class' => AccessControl::className(),
-                'only' => ['logout'],
-                'rules' => [
-                    [
-                        'actions' => ['logout'],
-                        'allow' => true,
-                        'roles' => ['@'],
-                    ],
-                ],
-            ],
-            'verbs' => [
-                'class' => VerbFilter::className(),
-                'actions' => [
-                    'logout' => ['post'],
-                ],
-            ],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function actions()
-    {
-        return [
-            'error' => [
-                'class' => 'yii\web\ErrorAction',
-            ],
-            'captcha' => [
-                'class' => 'yii\captcha\CaptchaAction',
-                'fixedVerifyCode' => YII_ENV_TEST ? 'testme' : null,
-            ],
-        ];
-    }
-
     /**
      * Displays homepage.
      *
@@ -61,18 +18,8 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        return $this->render('index');
-    }
-
-    /**
-     * Login action.
-     *
-     * @return Response|string
-     */
-    public function actionLogin()
-    {
         if (!Yii::$app->user->isGuest) {
-            return $this->goHome();
+            return $this->actionUrls();
         }
 
         $model = new LoginForm();
@@ -81,9 +28,25 @@ class SiteController extends Controller
         }
 
         $model->password = '';
-        return $this->render('login', [
+        return $this->render('index', [
             'model' => $model,
         ]);
+    }
+    
+    /**
+     * Urls action.
+     *
+     * @return Response
+     */
+    public function actionUrls(){
+        $dataProvider = new ActiveDataProvider([
+            'query' => Webcontent::find()->where('user_id='.Yii::$app->user->id),
+            'pagination' => [
+                'pageSize' => 20,
+            ],
+        ]);
+        
+        return $this->render('urls', ['dataProvider' => $dataProvider]);
     }
 
     /**
@@ -97,32 +60,60 @@ class SiteController extends Controller
 
         return $this->goHome();
     }
-
+    
     /**
-     * Displays contact page.
-     *
-     * @return Response|string
+     * Get HTML response
+     * @param integer $id Webcontent id
+     * @return Response
      */
-    public function actionContact()
-    {
-        $model = new ContactForm();
-        if ($model->load(Yii::$app->request->post()) && $model->contact(Yii::$app->params['adminEmail'])) {
-            Yii::$app->session->setFlash('contactFormSubmitted');
-
-            return $this->refresh();
-        }
-        return $this->render('contact', [
-            'model' => $model,
-        ]);
+    public function actionResponse($id){
+        $model = Webcontent::find()->where('id = '.$id)->one();
+        $html = base64_decode($model->getAttribute('response'));
+        
+        return $this->render('response', ['html' => $html]);
     }
-
+    
     /**
-     * Displays about page.
-     *
-     * @return string
+     * Save url
+     * @return Json
      */
-    public function actionAbout()
-    {
-        return $this->render('about');
+    public function actionSaveUrl(){
+        $post = Yii::$app->request->post();
+        $msg = ['save' => true];
+        $model = new Webcontent;
+        
+        $model->setAttribute('url', $post['url']);
+        $model->setAttribute('progress_status', $post['progress_status']);
+        $model->setAttribute('user_id', $post['user_id']);        
+
+        if(!$model->save()){
+            $msg = ['save' => false];
+        }
+
+        echo json_encode($msg);
+    }
+    
+    /**
+     * Get page data
+     */
+    public function actionGetPageData(){
+        $contents = Webcontent::find()->all();
+        
+        foreach ($contents as $content) {
+            $c = curl_init($content->getAttribute('url'));
+            curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
+
+            $html = curl_exec($c);
+            $status = curl_getinfo($c, CURLINFO_HTTP_CODE);
+
+            curl_close($c);
+            
+            $content->setAttribute('http_status', $status);
+            $content->setAttribute('response', base64_encode($html));
+            
+            $content->update();
+        }
+        
+        echo json_encode('ok');
     }
 }
