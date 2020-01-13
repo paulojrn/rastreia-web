@@ -6,6 +6,8 @@ use Yii;
 use yii\web\Controller;
 use yii\web\Response;
 use app\models\LoginForm;
+use yii\data\ActiveDataProvider;
+use app\models\Webcontent;
 
 class SiteController extends Controller
 {
@@ -17,7 +19,7 @@ class SiteController extends Controller
     public function actionIndex()
     {
         if (!Yii::$app->user->isGuest) {
-            return $this->render('lista-urls');
+            return $this->actionUrls();
         }
 
         $model = new LoginForm();
@@ -31,30 +33,20 @@ class SiteController extends Controller
         ]);
     }
     
-    public function actionListaUrls(){
-        return $this->render('lista-urls');
-    }
-
     /**
-     * Login action.
+     * Urls action.
      *
-     * @return Response|string
+     * @return Response
      */
-    public function actionLogin()
-    {
-        if (!Yii::$app->user->isGuest) {
-            return $this->goHome();
-        }
-
-        $model = new LoginForm();
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->goBack();
-        }
-
-        $model->password = '';
-        return $this->render('login', [
-            'model' => $model,
+    public function actionUrls(){
+        $dataProvider = new ActiveDataProvider([
+            'query' => Webcontent::find()->where('user_id='.Yii::$app->user->id),
+            'pagination' => [
+                'pageSize' => 20,
+            ],
         ]);
+        
+        return $this->render('urls', ['dataProvider' => $dataProvider]);
     }
 
     /**
@@ -67,5 +59,25 @@ class SiteController extends Controller
         Yii::$app->user->logout();
 
         return $this->goHome();
+    }
+    
+    /**
+     * Save url
+     * @return Json
+     */
+    public function actionSaveUrl(){
+        $post = Yii::$app->request->post();        
+        $model = new Webcontent;
+        $msg = ['save' => true];
+        
+        $model->setAttribute('url', $post['url']);
+        $model->setAttribute('progress_status', $post['progress_status']);
+        $model->setAttribute('user_id', $post['user_id']);
+
+        if(!$model->save()){
+            $msg = ['save' => false];
+        }
+
+        echo json_encode($msg);
     }
 }

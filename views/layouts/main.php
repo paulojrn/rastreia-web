@@ -15,9 +15,9 @@ AppAsset::register($this);
 $items = [];
 
 if(Yii::$app->user->isGuest){
-    $items[] = ['label' => 'Inicial', 'url' => ['/site/index']];
+    $items[] = ['label' => 'Início', 'url' => ['/site/index']];
 } else {
-    $items[] = ['label' => 'Minhas urls', 'url' => ['/site/lista-urls']];    
+    $items[] = ['label' => 'Minhas urls', 'url' => ['/site/urls']];    
     $items[] = '<li>'
                     . Html::beginForm(['/site/logout'], 'post')
                     . Html::submitButton(

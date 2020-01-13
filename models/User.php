@@ -57,4 +57,11 @@ class User extends ActiveRecord implements IdentityInterface
     {
         return $this->authKey === $authKey;
     }
+    
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getWebcontent() {
+        return $this->hasMany(Webcontent::className(), ['user_id' => 'id']);
+    }
 }
