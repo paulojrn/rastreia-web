@@ -61,23 +61,50 @@ class SiteController extends Controller
         return $this->goHome();
     }
     
+    public function actionResponse($id){
+        $model = Webcontent::find()->where('id = '.$id)->one();
+        $html = base64_decode($model->getAttribute('response'));
+        
+        return $this->render('response', ['html' => $html]);
+    }
+    
     /**
      * Save url
      * @return Json
      */
-    public function actionSaveUrl(){
+    public function actionSaveUrl(){    
         $post = Yii::$app->request->post();        
         $model = new Webcontent;
         $msg = ['save' => true];
         
+        $pageData = $this->getPageData($post['url']);
+        
         $model->setAttribute('url', $post['url']);
         $model->setAttribute('progress_status', $post['progress_status']);
         $model->setAttribute('user_id', $post['user_id']);
+        $model->setAttribute('http_status', $pageData['status']);
+        $model->setAttribute('response', base64_encode($pageData['html']));
 
         if(!$model->save()){
             $msg = ['save' => false];
         }
 
         echo json_encode($msg);
+    }
+    
+    private function getPageData($url){
+        $c = curl_init($url);
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
+
+        $html = curl_exec($c);
+
+        if (curl_error($c))
+            die(curl_error($c));
+
+        $status = curl_getinfo($c, CURLINFO_HTTP_CODE);
+
+        curl_close($c);
+        
+        return ['status' => $status, 'html' => $html];
     }
 }
