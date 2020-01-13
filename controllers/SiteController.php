@@ -77,18 +77,14 @@ class SiteController extends Controller
      * Save url
      * @return Json
      */
-    public function actionSaveUrl(){    
-        $post = Yii::$app->request->post();        
-        $model = new Webcontent;
+    public function actionSaveUrl(){
+        $post = Yii::$app->request->post();
         $msg = ['save' => true];
-        
-        $pageData = $this->getPageData($post['url']);
+        $model = new Webcontent;
         
         $model->setAttribute('url', $post['url']);
         $model->setAttribute('progress_status', $post['progress_status']);
-        $model->setAttribute('user_id', $post['user_id']);
-        $model->setAttribute('http_status', $pageData['status']);
-        $model->setAttribute('response', base64_encode($pageData['html']));
+        $model->setAttribute('user_id', $post['user_id']);        
 
         if(!$model->save()){
             $msg = ['save' => false];
@@ -99,22 +95,25 @@ class SiteController extends Controller
     
     /**
      * Get page data
-     * @param string $url
-     * @return array
      */
-    private function getPageData($url){
-        $c = curl_init($url);
-        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
-
-        $html = curl_exec($c);
-
-        if (curl_error($c))
-            die(curl_error($c));
-
-        $status = curl_getinfo($c, CURLINFO_HTTP_CODE);
-
-        curl_close($c);
+    public function actionGetPageData(){
+        $contents = Webcontent::find()->all();
         
-        return ['status' => $status, 'html' => $html];
+        foreach ($contents as $content) {
+            $c = curl_init($content->getAttribute('url'));
+            curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
+
+            $html = curl_exec($c);
+            $status = curl_getinfo($c, CURLINFO_HTTP_CODE);
+
+            curl_close($c);
+            
+            $content->setAttribute('http_status', $status);
+            $content->setAttribute('response', base64_encode($html));
+            
+            $content->update();
+        }
+        
+        echo json_encode('ok');
     }
 }

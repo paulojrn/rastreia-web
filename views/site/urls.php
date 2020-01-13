@@ -38,19 +38,11 @@ use yii\bootstrap\Modal;
                                     'headerOptions' => ['style' => 'width: 60%;']
                                 ],
                                 [
-                                    'attribute' => 'progress_status',
-                                    'label' => 'Andamento',
-                                    'headerOptions' => ['style' => 'width: 10%;'],
-                                    'value' => function($model){
-                                        return $model->progress_status == 1 ? 'Não rastreado' : 'Rastreado';
-                                    }
-                                ],
-                                [
                                     'attribute' => 'http_status',
                                     'label' => 'Status HTTP',
                                     'headerOptions' => ['style' => 'width: 10%;'],
                                     'value' => function($model){
-                                        return is_null($model->http_status) ? 'Não rastreado' : $model->http_status;
+                                        return is_null($model->http_status) ? 'Não rastreado' : ($model->http_status == 0 ? '-' : $model->http_status);
                                     }
                                 ],
                                 [                                    
@@ -92,6 +84,24 @@ use yii\bootstrap\Modal;
 ?>
 
 <script>
+    var periodic = true;
+    
+    $(function() {
+        if(periodic){
+            setInterval(function() {    
+                $.ajax({
+                    url: 'index.php?r=site/get-page-data', 
+                    type: 'get',
+                    success: function(data, textStatus, jqXHR){// Anything data, String textStatus, jqXHR jqXHR                  
+                        $.pjax.reload({container:"#grid-pjax",timeout: 10000});
+                    }          
+                });
+            }, 30000); // every 30 seconds
+            
+            periodic = false;
+        }
+    });
+    
     function openModalAddUrl(){
         $('#modal-addurl').modal('show');
 
