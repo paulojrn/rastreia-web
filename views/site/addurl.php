@@ -28,9 +28,11 @@
 </div>
 
 <script type="text/javascript">
-    $('#modal-addurl').on('hide.bs.modal',function(){
-        $('#url_input-id').val('');
-        $('#aviso').css('display', 'none');
+    $(function() {
+        $('#modal-addurl').on('hide.bs.modal',function(){
+            $('#url_input-id').val('');
+            $('#aviso').css('display', 'none');
+        });
     });
 
     function saveUrl(){
@@ -63,9 +65,7 @@
                 error: function(jqXHR, textStatus, errorThrown){// jqXHR jqXHR, String textStatus, String errorThrown
                     console.log(errorThrown);
 
-                    $('#modal-addurl').modal('hide');
-                    $('#url_input-id').val('');
-                    $('#aviso').css('display', 'none');
+                    $('#aviso').css('display', 'block');
                 }            
             });
         }

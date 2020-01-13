@@ -61,6 +61,11 @@ class SiteController extends Controller
         return $this->goHome();
     }
     
+    /**
+     * Get HTML response
+     * @param integer $id Webcontent id
+     * @return Response
+     */
     public function actionResponse($id){
         $model = Webcontent::find()->where('id = '.$id)->one();
         $html = base64_decode($model->getAttribute('response'));
@@ -92,6 +97,11 @@ class SiteController extends Controller
         echo json_encode($msg);
     }
     
+    /**
+     * Get page data
+     * @param string $url
+     * @return array
+     */
     private function getPageData($url){
         $c = curl_init($url);
         curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
